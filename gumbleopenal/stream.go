@@ -3,23 +3,28 @@ package gumbleopenal // import "github.com/talkkonnect/gumble/gumbleopenal"
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/talkkonnect/gpio"
 	hd44780 "github.com/talkkonnect/go-hd44780"
 	"github.com/talkkonnect/go-openal/openal"
+	"github.com/talkkonnect/gpio"
 	"github.com/talkkonnect/gumble/gumble"
 	"log"
 	"time"
 )
 
-const (
-        //  Modified By Suvir Kumar to Match GPIO Pins I used for my Hardware Implentation
-        RXVoiceActivityLEDPin       uint = 2  // GPIO 2 ->  Raspberry Pi Physical Pin 3
-)
-
 var (
-	ErrState    = errors.New("gumbleopenal: invalid state")
-	lastspeaker = "Nil"
-	lcdtext     = [4]string{"nil", "nil", "nil", ""} //global variable declaration for 4 lines of LCD
+	ErrState                   = errors.New("gumbleopenal: invalid state")
+	lastspeaker                = "Nil"
+	lcdtext                    = [4]string{"nil", "nil", "nil", ""} //global variable declaration for 4 lines of LCD
+	BackLightTime  *time.Timer
+	LCDBackLightTimeoutSecs int = 0
+	BackLightPin          uint = 0
+	RxVoiceActivityLedPin uint = 0
+	RSPin                 int  = 0
+	EPin                  int  = 0
+	D4Pin                 int  = 0
+	D5Pin                 int  = 0
+	D6Pin                 int  = 0
+	D7Pin                 int  = 0
 )
 
 type Stream struct {
@@ -34,7 +39,18 @@ type Stream struct {
 	contextSink *openal.Context
 }
 
-func New(client *gumble.Client) (*Stream, error) {
+func New(client *gumble.Client, voiceActivityLedPin uint, backLightPin uint, BackLightTimer *time.Timer, lCDBackLightTimeoutSecs int, PRSPin int, PEPin int, PD4Pin int, PD5Pin int, PD6Pin int, PD7Pin int) (*Stream, error) {
+	LCDBackLightTimeoutSecs = lCDBackLightTimeoutSecs
+	RxVoiceActivityLedPin = voiceActivityLedPin
+	BackLightPin = backLightPin
+	BackLightTime = BackLightTimer
+	RSPin = PRSPin
+	EPin  = PEPin
+	D4Pin = PD4Pin
+	D5Pin = PD5Pin
+	D6Pin = PD6Pin
+	D7Pin = PD7Pin
+
 	s := &Stream{
 		client:          client,
 		sourceFrameSize: client.Config.AudioFrameSize(),
@@ -67,6 +83,16 @@ func (s *Stream) Destroy() {
 	}
 }
 
+func (s *Stream) StartSourceFile() error {
+	if s.sourceStop != nil {
+		return ErrState
+	}
+	s.deviceSource.CaptureStart()
+	s.sourceStop = make(chan bool)
+	go s.sourceRoutine()
+	return nil
+}
+
 func (s *Stream) StartSource() error {
 	if s.sourceStop != nil {
 		return ErrState
@@ -96,17 +122,21 @@ func (s *Stream) StopSource() error {
 }
 
 func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
-	pin := gpio.NewOutput(RXVoiceActivityLEDPin, false)
-	pin.Low()
+	pinA := gpio.NewOutput(RxVoiceActivityLedPin, false)
+	pinB := gpio.NewOutput(BackLightPin, false)
+	pinA.Low()
+	pinB.Low()
 
 	timertalkled := time.NewTimer(time.Millisecond * 20)
+
 
 	var watchpin = true
 
 	go func() {
 		for watchpin {
 			<-timertalkled.C
-			pin.Low()
+			//log.Printf("warn: Inside Stream Address of Timer %#v\n",BackLightTimer)
+			pinA.Low()
 			lastspeaker = "Nil"
 		}
 	}()
@@ -125,7 +155,9 @@ func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
 
 		for packet := range e.C {
 			samples := len(packet.AudioBuffer)
-			pin.High()
+			pinA.High()
+			pinB.High()
+
 			timertalkled.Reset(time.Second)
 			if samples > cap(raw) {
 				continue
@@ -147,8 +179,11 @@ func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
 				if lastspeaker != e.User.Name {
 					log.Println("Speaking:", e.User.Name)
 					lastspeaker = e.User.Name
-					lcdtext = [4]string{"nil", "nil", "nil", e.User.Name + " Spoke"}
-					go hd44780.LcdDisplay(lcdtext)
+					t := time.Now()
+					lcdtext = [4]string{"nil", "", "", e.User.Name + " " + t.Format("15:04:05")}
+					BackLightTime.Reset(time.Duration(LCDBackLightTimeoutSecs) * time.Second)
+					go hd44780.LcdDisplay(lcdtext, RSPin, EPin, D4Pin, D5Pin, D6Pin, D7Pin)
+					//log.Printf("debug: LCD Backlight Timer Address %v", BackLightTime, " Reset By Audio Stream\n")
 				}
 			}
 		}
