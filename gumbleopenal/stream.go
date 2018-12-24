@@ -12,19 +12,20 @@ import (
 )
 
 var (
-	ErrState                   = errors.New("gumbleopenal: invalid state")
-	lastspeaker                = "Nil"
-	lcdtext                    = [4]string{"nil", "nil", "nil", ""} //global variable declaration for 4 lines of LCD
-	BackLightTime  *time.Timer
-	LCDBackLightTimeoutSecs int = 0
-	BackLightPin          uint = 0
-	RxVoiceActivityLedPin uint = 0
-	RSPin                 int  = 0
-	EPin                  int  = 0
-	D4Pin                 int  = 0
-	D5Pin                 int  = 0
-	D6Pin                 int  = 0
-	D7Pin                 int  = 0
+	ErrState                = errors.New("gumbleopenal: invalid state")
+	lastspeaker             = "Nil"
+	lcdtext                 = [4]string{"nil", "nil", "nil", ""} //global variable declaration for 4 lines of LCD
+	BackLightTime           *time.Timer
+	LCDBackLightTimeoutSecs int    = 0
+	BackLightPin            uint   = 0
+	RxVoiceActivityLedPin   uint   = 0
+	RSPin                   int    = 0
+	EPin                    int    = 0
+	D4Pin                   int    = 0
+	D5Pin                   int    = 0
+	D6Pin                   int    = 0
+	D7Pin                   int    = 0
+	TargetBoard             string
 )
 
 type Stream struct {
@@ -39,17 +40,18 @@ type Stream struct {
 	contextSink *openal.Context
 }
 
-func New(client *gumble.Client, voiceActivityLedPin uint, backLightPin uint, BackLightTimer *time.Timer, lCDBackLightTimeoutSecs int, PRSPin int, PEPin int, PD4Pin int, PD5Pin int, PD6Pin int, PD7Pin int) (*Stream, error) {
+func New(client *gumble.Client, voiceActivityLedPin uint, backLightPin uint, BackLightTimer *time.Timer, lCDBackLightTimeoutSecs int, PRSPin int, PEPin int, PD4Pin int, PD5Pin int, PD6Pin int, PD7Pin int, PTargetBoard string) (*Stream, error) {
 	LCDBackLightTimeoutSecs = lCDBackLightTimeoutSecs
 	RxVoiceActivityLedPin = voiceActivityLedPin
 	BackLightPin = backLightPin
 	BackLightTime = BackLightTimer
 	RSPin = PRSPin
-	EPin  = PEPin
+	EPin = PEPin
 	D4Pin = PD4Pin
 	D5Pin = PD5Pin
 	D6Pin = PD6Pin
 	D7Pin = PD7Pin
+	TargetBoard = PTargetBoard
 
 	s := &Stream{
 		client:          client,
@@ -122,13 +124,16 @@ func (s *Stream) StopSource() error {
 }
 
 func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
-	pinA := gpio.NewOutput(RxVoiceActivityLedPin, false)
-	pinB := gpio.NewOutput(BackLightPin, false)
-	pinA.Low()
-	pinB.Low()
+
+
+	if TargetBoard == "rpi" {
+		pinA := gpio.NewOutput(RxVoiceActivityLedPin, false)
+		pinB := gpio.NewOutput(BackLightPin, false)
+		pinA.Low()
+		pinB.Low()
+	}
 
 	timertalkled := time.NewTimer(time.Millisecond * 20)
-
 
 	var watchpin = true
 
@@ -136,7 +141,10 @@ func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
 		for watchpin {
 			<-timertalkled.C
 			//log.Printf("warn: Inside Stream Address of Timer %#v\n",BackLightTimer)
-			pinA.Low()
+			if TargetBoard == "rpi" {
+				pinA := gpio.NewOutput(RxVoiceActivityLedPin, false)
+				pinA.Low()
+			}
 			lastspeaker = "Nil"
 		}
 	}()
@@ -155,8 +163,12 @@ func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
 
 		for packet := range e.C {
 			samples := len(packet.AudioBuffer)
-			pinA.High()
-			pinB.High()
+			if TargetBoard == "rpi" {
+				pinA := gpio.NewOutput(RxVoiceActivityLedPin, false)
+				pinB := gpio.NewOutput(BackLightPin, false)
+				pinA.High()
+				pinB.High()
+			}
 
 			timertalkled.Reset(time.Second)
 			if samples > cap(raw) {
@@ -180,10 +192,12 @@ func (s *Stream) OnAudioStream(e *gumble.AudioStreamEvent) {
 					log.Println("Speaking:", e.User.Name)
 					lastspeaker = e.User.Name
 					t := time.Now()
-					lcdtext = [4]string{"nil", "", "", e.User.Name + " " + t.Format("15:04:05")}
-					BackLightTime.Reset(time.Duration(LCDBackLightTimeoutSecs) * time.Second)
-					go hd44780.LcdDisplay(lcdtext, RSPin, EPin, D4Pin, D5Pin, D6Pin, D7Pin)
-					//log.Printf("debug: LCD Backlight Timer Address %v", BackLightTime, " Reset By Audio Stream\n")
+					if TargetBoard == "rpi" {
+						lcdtext = [4]string{"nil", "", "", e.User.Name + " " + t.Format("15:04:05")}
+						BackLightTime.Reset(time.Duration(LCDBackLightTimeoutSecs) * time.Second)
+						go hd44780.LcdDisplay(lcdtext, RSPin, EPin, D4Pin, D5Pin, D6Pin, D7Pin)
+						//log.Printf("debug: LCD Backlight Timer Address %v", BackLightTime, " Reset By Audio Stream\n")
+					}
 				}
 			}
 		}
