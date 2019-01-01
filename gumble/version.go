@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 // Version represents a Mumble client or server version.
 type Version struct {

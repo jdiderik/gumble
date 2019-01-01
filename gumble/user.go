@@ -1,8 +1,8 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 import (
-	"github.com/talkkonnect/gumble/gumble/MumbleProto"
 	"github.com/golang/protobuf/proto"
+	"github.com/talkkonnect/gumble/gumble/MumbleProto"
 )
 
 // User represents a user that is currently connected to the server.
@@ -44,7 +44,7 @@ type User struct {
 	// The user's texture hash. nil if User.Texture has been populated.
 	TextureHash []byte
 
-	// The user's stats. Containts nil if the stats have not yet been requested.
+	// The user's stats. Contains nil if the stats have not yet been requested.
 	Stats *UserStats
 
 	client  *Client

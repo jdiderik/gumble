@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 // ContextActions is a map of ContextActions.
 type ContextActions map[string]*ContextAction

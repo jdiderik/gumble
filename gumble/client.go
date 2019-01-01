@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 import (
 	"crypto/tls"
@@ -6,12 +6,11 @@ import (
 	"math"
 	"net"
 	"runtime"
-	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/talkkonnect/gumble/gumble/MumbleProto"
 	"github.com/golang/protobuf/proto"
+	"github.com/talkkonnect/gumble/gumble/MumbleProto"
 )
 
 // State is the current state of the client's connection to the server.
@@ -69,8 +68,9 @@ type Client struct {
 
 	state uint32
 
-	volatileWg   sync.WaitGroup
-	volatileLock sync.Mutex
+	// volatile is held by the client when the internal data structures are being
+	// modified.
+	volatile rpwMutex
 
 	connect         chan *RejectError
 	end             chan struct{}
@@ -133,37 +133,37 @@ func DialWithDialer(dialer *net.Dialer, addr string, config *Config, tlsConfig *
 
 	go client.pingRoutine()
 
-	var deadline time.Time
-	if !dialer.Deadline.IsZero() {
-		deadline = dialer.Deadline
-	}
-	if dialer.Timeout > 0 {
-		diff := start.Add(dialer.Timeout)
-		if deadline.IsZero() || diff.Before(deadline) {
-			deadline = diff
+	var timeout <-chan time.Time
+	{
+		var deadline time.Time
+		if !dialer.Deadline.IsZero() {
+			deadline = dialer.Deadline
+		}
+		if dialer.Timeout > 0 {
+			diff := start.Add(dialer.Timeout)
+			if deadline.IsZero() || diff.Before(deadline) {
+				deadline = diff
+			}
+		}
+		if !deadline.IsZero() {
+			timer := time.NewTimer(deadline.Sub(start))
+			defer timer.Stop()
+			timeout = timer.C
 		}
 	}
 
-	if !deadline.IsZero() {
-		timeout := deadline.Sub(start)
-		select {
-		case <-time.After(timeout):
-			client.Conn.Close()
-			return nil, errors.New("gumble: synchronization timeout")
-		case err := <-client.connect:
-			if err != nil {
-				client.Conn.Close()
-				return nil, err
-			}
-		}
-	} else {
-		if err := <-client.connect; err != nil {
+	select {
+	case <-timeout:
+		client.Conn.Close()
+		return nil, errors.New("gumble: synchronization timeout")
+	case err := <-client.connect:
+		if err != nil {
 			client.Conn.Close()
 			return nil, err
 		}
-	}
 
-	return client, nil
+		return client, nil
+	}
 }
 
 // State returns the current state of the client.
@@ -277,10 +277,8 @@ func (c *Client) Disconnect() error {
 // associated data will not be changed during the lifetime of the function
 // call.
 func (c *Client) Do(f func()) {
-	c.volatileLock.Lock()
-	c.volatileWg.Add(1)
-	c.volatileLock.Unlock()
-	defer c.volatileWg.Done()
+	c.volatile.RLock()
+	defer c.volatile.RUnlock()
 
 	f()
 }

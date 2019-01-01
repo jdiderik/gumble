@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 import (
 	"github.com/talkkonnect/gumble/gumble/MumbleProto"
@@ -9,12 +9,8 @@ import (
 //
 // Its ID should not be modified, and it does not have to to be sent to the
 // server before use.
-var VoiceTargetLoopback *VoiceTarget
-
-func init() {
-	VoiceTargetLoopback = &VoiceTarget{
-		ID: 31,
-	}
+var VoiceTargetLoopback *VoiceTarget = &VoiceTarget{
+	ID: 31,
 }
 
 type voiceTargetChannel struct {

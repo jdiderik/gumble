@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 import (
 	"encoding/binary"
@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/talkkonnect/gumble/gumble/MumbleProto"
 	"github.com/talkkonnect/gumble/gumble/varint"
-	"github.com/golang/protobuf/proto"
 )
 
 // DefaultPort is the default port on which Mumble servers listen.

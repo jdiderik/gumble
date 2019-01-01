@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 type audioEventItem struct {
 	parent     *AudioListeners

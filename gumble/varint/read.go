@@ -1,4 +1,4 @@
-package varint // import "github.com/talkkonnect/gumble/gumble/varint"
+package varint
 
 import (
 	"encoding/binary"

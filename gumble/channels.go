@@ -1,4 +1,4 @@
-package gumble // import "github.com/talkkonnect/gumble/gumble"
+package gumble
 
 // Channels is a map of server channels.
 type Channels map[uint32]*Channel
@@ -21,10 +21,8 @@ func (c Channels) create(id uint32) *Channel {
 // containt the root channel.
 func (c Channels) Find(names ...string) *Channel {
 	root := c[0]
-	if names == nil || root == nil || names[0] == "root" {
+	if names == nil || root == nil {
 		return root
 	}
 	return root.Find(names...)
 }
-
-
