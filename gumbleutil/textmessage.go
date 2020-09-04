@@ -1,4 +1,4 @@
-package gumbleutil // import "github.com/talkkonnect/gumble/gumbleutil"
+package gumbleutil
 
 import (
 	"bytes"

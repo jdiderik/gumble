@@ -1,4 +1,4 @@
-package main // import "github.com/talkkonnect/gumble/_examples/mumble-audio-player"
+package main
 
 import (
 	"flag"

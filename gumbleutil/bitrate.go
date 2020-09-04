@@ -1,8 +1,9 @@
-package gumbleutil // import "github.com/talkkonnect/gumble/gumbleutil"
+package gumbleutil
 
 import (
-	"github.com/talkkonnect/gumble/gumble"
 	"time"
+
+	"github.com/talkkonnect/gumble/gumble"
 )
 
 var autoBitrate = &Listener{

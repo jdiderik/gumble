@@ -1,4 +1,4 @@
-package gumbleutil // import "github.com/talkkonnect/gumble/gumbleutil"
+package gumbleutil
 
 import (
 	"github.com/talkkonnect/gumble/gumble"
@@ -21,6 +21,8 @@ import (
 //
 //  client.Attach(gumbleutil.ListenerFunc(handler))
 type ListenerFunc func(e interface{})
+
+var _ gumble.EventListener = ListenerFunc(nil)
 
 // OnConnect implements gumble.EventListener.OnConnect.
 func (lf ListenerFunc) OnConnect(e *gumble.ConnectEvent) {

@@ -1,4 +1,4 @@
-package gumbleutil // import "github.com/talkkonnect/gumble/gumbleutil"
+package gumbleutil
 
 import (
 	"github.com/talkkonnect/gumble/gumble"
@@ -19,6 +19,8 @@ type Listener struct {
 	ContextActionChange func(e *gumble.ContextActionChangeEvent)
 	ServerConfig        func(e *gumble.ServerConfigEvent)
 }
+
+var _ gumble.EventListener = (*Listener)(nil)
 
 // OnConnect implements gumble.EventListener.OnConnect.
 func (l Listener) OnConnect(e *gumble.ConnectEvent) {
