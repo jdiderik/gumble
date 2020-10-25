@@ -20,6 +20,7 @@ var (
 	errInvalidProtobuf      = errors.New("gumble: protobuf message has an invalid field")
 	errUnsupportedAudio     = errors.New("gumble: unsupported audio codec")
 	errNoCodec              = errors.New("gumble: no audio codec")
+	CH = make(chan *AudioPacket)
 )
 
 var handlers = [...]func(*Client, []byte) error{
@@ -161,7 +162,7 @@ func (c *Client) handleUDPTunnel(buffer []byte) error {
 		c.volatile.Unlock()
 		ch := item.streams[user]
 		if ch == nil {
-			ch = make(chan *AudioPacket)
+			ch = CH
 			item.streams[user] = ch
 			event := AudioStreamEvent{
 				Client: c,
