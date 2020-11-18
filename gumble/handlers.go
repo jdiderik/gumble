@@ -21,6 +21,7 @@ var (
 	errUnsupportedAudio     = errors.New("gumble: unsupported audio codec")
 	errNoCodec              = errors.New("gumble: no audio codec")
 	CH = make(chan *AudioPacket)
+	Speaker = ""
 )
 
 var handlers = [...]func(*Client, []byte) error{
@@ -147,6 +148,9 @@ func (c *Client) handleUDPTunnel(buffer []byte) error {
 		AudioBuffer: AudioBuffer(pcm),
 	}
 
+	Speaker = event.Sender.Name
+
+
 	if len(buffer)-audioLength == 3*4 {
 		// the packet has positional audio data; 3x float32
 		buffer = buffer[audioLength:]
@@ -168,6 +172,7 @@ func (c *Client) handleUDPTunnel(buffer []byte) error {
 				Client: c,
 				User:   user,
 				C:      ch,
+				LastSpeaker:	&Speaker,
 			}
 			item.listener.OnAudioStream(&event)
 		}

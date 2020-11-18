@@ -45,6 +45,7 @@ type AudioStreamEvent struct {
 	Client *Client
 	User   *User
 	C      <-chan *AudioPacket
+	LastSpeaker *string
 }
 
 // AudioBuffer is a slice of PCM audio samples.
