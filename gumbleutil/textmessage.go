@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"strings"
 
-	"github.com/talkkonnect/gumble/gumble"
+	"github.com/jdiderik/gumble/gumble"
 )
 
 // PlainText returns the Message string without HTML tags or entities.

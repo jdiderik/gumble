@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/talkkonnect/gumble/gumble/MumbleProto"
+	"github.com/jdiderik/gumble/gumble/MumbleProto"
 )
 
 // State is the current state of the client's connection to the server.

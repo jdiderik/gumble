@@ -1,4 +1,4 @@
-package gumbleffmpeg // import "github.com/talkkonnect/gumble/gumbleffmpeg"
+package gumbleffmpeg // import "github.com/jdiderik/gumble/gumbleffmpeg"
 
 import (
 	"io"
